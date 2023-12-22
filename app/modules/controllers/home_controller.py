@@ -1,39 +1,31 @@
 from datetime import datetime
 
 from aiohttp import web
+from aiohttp_apispec import docs, json_schema, querystring_schema
 from aiohttp_session import get_session
+from modules.schemas.request_schema import LoginRequest, VerifyRequest
 from modules.schemas.response_schema import CheckResponse, CheckStatus
 
 
+@docs(
+    tags=["Heath Check"],
+    summary="Check heath code",
+    description="Check heath code",
+)
 async def welcome(request: web.Request):
-    """
-    ---
-    description: This end-point to check server is oke
-    tags:
-    - Health check
-    produces:
-    - text/plain
-    responses:
-        "200":
-            description: successful operation. Return "Welcome to home page" text
-    """
     return web.Response(text="Welcome to home page")
 
 
+@docs(
+    tags=["Login Function"],
+    summary="Login handle",
+    description="Login handle",
+)
+@json_schema(LoginRequest)
 async def login_handle(request: web.Request):
-    """
-    ---
-    description: This end-point to login function
-    tags:
-    - Login
-    produces:
-    - application/json
-    responses:
-        "200": CheckResponse
-    """
-    data = await request.post()
-    name = str(data["name"]).lower().replace(" ", "") if "name" in data else None
-    ip = data["ip"] if data["ip"] else None
+    data = await request.json()
+    name = str(data["name"]).lower().replace(" ", "")
+    ip = data["ip"]
     if name == "ngaongo" and ip:
         session = await get_session(request)
         session["visted"] = True
@@ -55,6 +47,12 @@ async def login_handle(request: web.Request):
     )
 
 
+@docs(
+    tags=["Login Function"],
+    summary="Verify login status",
+    description="Verify login status",
+)
+@querystring_schema(VerifyRequest)
 async def verify_handle(request: web.Request):
     data = request.query
     ip = data["ip"] if "ip" in data else None

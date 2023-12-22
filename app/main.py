@@ -1,13 +1,16 @@
 import asyncio
+import logging
 import base64
+import aiohttp_autoreload
 
 from aiohttp import web
+from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_middlewares import cors_middleware, error_middleware
 from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from cryptography import fernet
+from config import DEBUG
 from router import routers
-from aiohttp_swagger import setup_swagger
 
 
 def create_runner():
@@ -22,8 +25,7 @@ def create_runner():
     setup(app, EncryptedCookieStorage(secret_key))
     app.add_routes(routes=routers)
 
-    setup_swagger(app, swagger_url="/docs", title="Demo Swagger API")
-
+    setup_aiohttp_apispec(app, swagger_path="/docs")
     return web.AppRunner(app)
 
 
@@ -31,6 +33,10 @@ async def start_server(host="0.0.0.0", port=8080):
     runner = create_runner()
     await runner.setup()
 
+    if DEBUG:
+        aiohttp_autoreload.start()
+
+    logging.basicConfig(level=logging.DEBUG)
     site = web.TCPSite(runner, host, port)
     await site.start()
 

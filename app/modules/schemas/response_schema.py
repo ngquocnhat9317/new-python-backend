@@ -1,15 +1,19 @@
-from pydantic import BaseModel
+from marshmallow import Schema, fields
 
 
-class BaseResponse(BaseModel):
-    status: int = 200
+class BaseResponse(Schema):
+    status = fields.Integer(strict=True, default=200)
 
 
-class CheckStatus(BaseModel):
-    check_status: bool
-    message: str = ""
+class CheckStatus(Schema):
+    check_status = fields.Bool()
+    message = fields.Str()
 
 
 
 class CheckResponse(BaseResponse):
-    result: CheckStatus
+    result = fields.Nested(BaseResponse())
+
+
+class CheckStatusResponse(BaseResponse):
+    result = fields.Nested(BaseResponse())
