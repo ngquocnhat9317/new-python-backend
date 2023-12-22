@@ -12,8 +12,8 @@ class CheckStatus(Schema):
 
 
 class CheckResponse(BaseResponse):
-    result = fields.Nested(BaseResponse())
+    result = fields.Nested(CheckStatus())
 
 
 class CheckStatusResponse(BaseResponse):
-    result = fields.Nested(BaseResponse())
+    result = fields.Nested(CheckStatus())

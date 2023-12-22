@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from aiohttp import web
-from aiohttp_apispec import docs, json_schema, querystring_schema
+from aiohttp_apispec import (docs, json_schema, querystring_schema,
+                             response_schema)
 from aiohttp_session import get_session
 from modules.schemas.request_schema import LoginRequest, VerifyRequest
 from modules.schemas.response_schema import CheckResponse, CheckStatus
@@ -21,7 +22,8 @@ async def welcome(request: web.Request):
     summary="Login handle",
     description="Login handle",
 )
-@json_schema(LoginRequest)
+@json_schema(LoginRequest())
+@response_schema(CheckResponse(), 200)
 async def login_handle(request: web.Request):
     data = await request.json()
     name = str(data["name"]).lower().replace(" ", "")
@@ -38,12 +40,13 @@ async def login_handle(request: web.Request):
             }
         )
     return web.json_response(
-        data=CheckResponse(
-            status=200,
-            result=CheckStatus(
-                check_status=True, message="Chỉ có ngáo ngơ mới được vào đây"
-            ),
-        )
+        data={
+            "status": 200,
+            "result": {
+                "check_status": False,
+                "message": "Chỉ có ngáo ngơ mới được vào đây",
+            },
+        }
     )
 
 
@@ -52,16 +55,23 @@ async def login_handle(request: web.Request):
     summary="Verify login status",
     description="Verify login status",
 )
-@querystring_schema(VerifyRequest)
+@querystring_schema(VerifyRequest())
+@response_schema(CheckResponse(), 200)
 async def verify_handle(request: web.Request):
     data = request.query
     ip = data["ip"] if "ip" in data else None
     session = await get_session(request)
     if ip and "ip" in session and session["id"] == ip:
         return web.json_response(
-            data=CheckResponse(status=200, result=CheckStatus(check_status=True))
+            data={
+                "status": 200,
+                "result": {"check_status": True},
+            }
         )
 
     return web.json_response(
-        data=CheckResponse(status=200, result=CheckStatus(check_status=False))
+        data={
+            "status": 200,
+            "result": {"check_status": False},
+        }
     )
