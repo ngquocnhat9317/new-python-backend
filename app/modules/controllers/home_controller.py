@@ -71,7 +71,11 @@ async def verify_handle(request: web.Request):
         return web.json_response(
             data={
                 "status": 200,
-                "result": {"check_status": False},
+                "result": {
+                    "check_status": False,
+                    "message": f"get error with: {session['ip']}, "
+                    f"{session['visted_timestamp']}",
+                },
             }
         )
 
