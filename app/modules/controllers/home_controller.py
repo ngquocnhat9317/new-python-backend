@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from aiohttp import web
-from aiohttp_apispec import (docs, json_schema, querystring_schema,
-                             response_schema)
+from aiohttp_apispec import docs, json_schema, querystring_schema, response_schema
 from aiohttp_session import get_session
+from modules.utils.constant import LIST_CORRECT_ANSWER
 from modules.schemas.request_schema import LoginRequest, VerifyRequest
 from modules.schemas.response_schema import CheckResponse, CheckStatus
 
@@ -26,9 +26,9 @@ async def welcome(request: web.Request):
 @response_schema(CheckResponse(), 200)
 async def login_handle(request: web.Request):
     data = await request.json()
-    name = str(data["name"]).lower().replace(" ", "")
+    name = str(data["name"]).lower()
     ip = data["ip"]
-    if name == "ngaongo" and ip:
+    if name in LIST_CORRECT_ANSWER and ip:
         session = await get_session(request)
         session["visted"] = True
         session["visted_timestamp"] = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
@@ -36,7 +36,7 @@ async def login_handle(request: web.Request):
         return web.json_response(
             data={
                 "status": 200,
-                "result": {"check_status": True},
+                "result": {"check_status": True, "message": "Login Success"},
             }
         )
     return web.json_response(
@@ -44,7 +44,7 @@ async def login_handle(request: web.Request):
             "status": 200,
             "result": {
                 "check_status": False,
-                "message": "Chỉ có ngáo ngơ mới được vào đây",
+                "message": "Login False",
             },
         }
     )
@@ -61,17 +61,28 @@ async def verify_handle(request: web.Request):
     data = request.query
     ip = data["ip"] if "ip" in data else None
     session = await get_session(request)
-    if ip and "ip" in session and session["id"] == ip:
+
+    if (
+        "ip" not in session
+        or session["ip"] != ip
+        or "visted_timestamp" not in session
+        or check_expired(session["visted_timestamp"])
+    ):
         return web.json_response(
             data={
                 "status": 200,
-                "result": {"check_status": True},
+                "result": {"check_status": False},
             }
         )
 
     return web.json_response(
         data={
             "status": 200,
-            "result": {"check_status": False},
+            "result": {"check_status": True},
         }
     )
+
+
+def check_expired(date_str: str) -> bool:
+    time = datetime.strptime(date_str, "%d/%m/%Y, %H:%M:%S")
+    return datetime.now() > (time + timedelta(minutes=30))
