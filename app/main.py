@@ -1,17 +1,27 @@
 import asyncio
-import logging
 import base64
-import aiohttp_autoreload
+import logging
 
+import aiohttp_autoreload
 from aiohttp import web
 from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_middlewares import cors_middleware, error_middleware
 from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
-from cryptography import fernet
+from modules.repositories.user_repository import UserRepository
 from config import DEBUG
+from cryptography import fernet
+from database.db import engine
+from database.models import Base
 from router import routers
 
+
+def create_database():
+    Base.metadata.create_all(engine)
+
+def init_user():
+    repo = UserRepository()
+    repo.setup_master()
 
 def create_runner():
     app = web.Application(
@@ -35,13 +45,15 @@ async def start_server(host="0.0.0.0", port=8080):
 
     if DEBUG:
         aiohttp_autoreload.start()
-
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.info("Server start")
     site = web.TCPSite(runner, host, port)
     await site.start()
 
 
 if __name__ == "__main__":
+    create_database()
+    init_user()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server())
     loop.run_forever()

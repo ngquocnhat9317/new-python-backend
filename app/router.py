@@ -1,5 +1,6 @@
 from aiohttp import web
-from modules.controllers.home_controller import login_handle, verify_handle, welcome
+from modules.controllers.home_controller import (login_handle, verify_handle,
+                                                 welcome)
 
 routers = [
     web.get("/", welcome, allow_head=False),

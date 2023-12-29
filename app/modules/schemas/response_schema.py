@@ -10,7 +10,6 @@ class CheckStatus(Schema):
     message = fields.Str()
 
 
-
 class CheckResponse(BaseResponse):
     result = fields.Nested(CheckStatus())
 

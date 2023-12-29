@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 
 from aiohttp import web
-from aiohttp_apispec import docs, json_schema, querystring_schema, response_schema
-from aiohttp_session import get_session
-from modules.utils.constant import LIST_CORRECT_ANSWER
+from aiohttp_apispec import (docs, json_schema, querystring_schema,
+                             response_schema)
+from modules.repositories.logger_repository import LoggerRepository
+from modules.repositories.user_repository import UserRepository
 from modules.schemas.request_schema import LoginRequest, VerifyRequest
-from modules.schemas.response_schema import CheckResponse, CheckStatus
+from modules.schemas.response_schema import CheckResponse
 
 
 @docs(
@@ -26,13 +27,18 @@ async def welcome(request: web.Request):
 @response_schema(CheckResponse(), 200)
 async def login_handle(request: web.Request):
     data = await request.json()
+    user_repo = UserRepository()
+
     name = str(data["name"]).lower()
-    ip = data["ip"]
-    if name in LIST_CORRECT_ANSWER and ip:
-        session = await get_session(request)
-        session["visted"] = True
-        session["visted_timestamp"] = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-        session["ip"] = ip
+    user = user_repo.session_query.filter(user_repo.model.id == 1).first()
+
+    ip = str(data["ip"])
+    if name in list(user.conditions) and ip:
+        logger_repo = LoggerRepository()
+        logger_repo.login_logger(ip=ip)
+
+        logger_repo.clear_log()
+
         return web.json_response(
             data={
                 "status": 200,
@@ -59,30 +65,22 @@ async def login_handle(request: web.Request):
 @response_schema(CheckResponse(), 200)
 async def verify_handle(request: web.Request):
     data = request.query
-    ip = data["ip"] if "ip" in data else None
-    session = await get_session(request)
+    ip = data["ip"]
+    logger_repo = LoggerRepository()
+    logger_repo.check_logger(ip)
 
-    if (
-        "ip" not in session
-        or session["ip"] != ip
-        or "visted_timestamp" not in session
-        or check_expired(session["visted_timestamp"])
-    ):
+    if logger_repo.check_logger(ip):
         return web.json_response(
             data={
                 "status": 200,
-                "result": {
-                    "check_status": False,
-                    "message": f"get error with: {session['ip']}, "
-                    f"{session['visted_timestamp']}",
-                },
+                "result": {"check_status": True},
             }
         )
 
     return web.json_response(
         data={
             "status": 200,
-            "result": {"check_status": True},
+            "result": {"check_status": False},
         }
     )
 
