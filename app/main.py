@@ -8,20 +8,22 @@ from aiohttp_apispec import setup_aiohttp_apispec
 from aiohttp_middlewares import cors_middleware, error_middleware
 from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
-from modules.repositories.user_repository import UserRepository
 from config import DEBUG
 from cryptography import fernet
 from database.db import engine
 from database.models import Base
+from modules.repositories.user_repository import UserRepository
 from router import routers
 
 
 def create_database():
     Base.metadata.create_all(engine)
 
+
 def init_user():
     repo = UserRepository()
     repo.setup_master()
+
 
 def create_runner():
     app = web.Application(
@@ -45,7 +47,9 @@ async def start_server(host="0.0.0.0", port=8080):
 
     if DEBUG:
         aiohttp_autoreload.start()
-    logging.basicConfig(format='%(asctime)s - %(levelname)s: %(message)s', level=logging.DEBUG)
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s: %(message)s", level=logging.DEBUG
+    )
     logging.info("Server start")
     site = web.TCPSite(runner, host, port)
     await site.start()

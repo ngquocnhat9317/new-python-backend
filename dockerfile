@@ -7,6 +7,7 @@ RUN python -m venv /opt/venv
 # Enable venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+COPY ./root-certs.crt /app/root-certs.crt
 COPY ./requirements.txt /app/requirements.txt
 RUN pip install -Ur requirements.txt
 

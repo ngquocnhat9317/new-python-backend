@@ -4,11 +4,12 @@ from database.schemas import Session
 class ModelError(Exception):
     pass
 
+
 class SchemaError(Exception):
     pass
 
 
-class BaseRepository():
+class BaseRepository:
     def __init__(self):
         super().__init__()
         self.session = Session
