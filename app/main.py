@@ -5,33 +5,33 @@ import logging
 import aiohttp_autoreload
 from aiohttp import web
 from aiohttp_apispec import setup_aiohttp_apispec
-from aiohttp_middlewares import cors_middleware, error_middleware
+from aiohttp_middlewares import cors_middleware
 from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
-from config import DEBUG
+from modules.middlewares.authenticated import authenticated_middleware
+from modules.middlewares.error_handle import error_middleware
+from config import ALLOW_TOKEN, DEBUG
 from cryptography import fernet
-from database.db import engine
+from database.db import get_engine
 from database.models import Base
-from modules.repositories.user_repository import UserRepository
+from modules.utils.constant import DATABASE_KEY
 from router import routers
 
 
-def create_database():
-    Base.metadata.create_all(engine)
-
-
-def init_user():
-    repo = UserRepository()
-    repo.setup_master()
-
-
-def create_runner():
+async def create_runner():
     app = web.Application(
         middlewares=[
             cors_middleware(allow_all=True),
-            error_middleware(),
+            web.normalize_path_middleware(),
+            authenticated_middleware,
+            error_middleware,
         ]
     )
+    app[DATABASE_KEY] = get_engine()
+    async with app[DATABASE_KEY].begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
     fernet_key = fernet.Fernet.generate_key()
     secret_key = base64.urlsafe_b64decode(fernet_key)
     setup(app, EncryptedCookieStorage(secret_key))
@@ -42,7 +42,7 @@ def create_runner():
 
 
 async def start_server(host="0.0.0.0", port=8080):
-    runner = create_runner()
+    runner = await create_runner()
     await runner.setup()
 
     if DEBUG:
@@ -56,8 +56,6 @@ async def start_server(host="0.0.0.0", port=8080):
 
 
 if __name__ == "__main__":
-    create_database()
-    init_user()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server())
     loop.run_forever()

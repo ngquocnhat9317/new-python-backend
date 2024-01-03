@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PROD = os.getenv("PROD")
-DATABASE = os.getenv("SCHEMA")
-HOST = os.getenv("DB_HOST")
-PORT = os.getenv("DB_PORT")
-USER = os.getenv("USER")
-PASSWD = os.getenv("PASSWD")
-RDS_CERT_PATH = "/opt/root-certs.crt"
+DATABASE = os.getenv("SCHEMA", "database_name")
+HOST = os.getenv("DB_HOST", "127.0.0.1")
+PORT = os.getenv("DB_PORT", "5432")
+USER = os.getenv("USER", "root")
+PASSWD = os.getenv("PASSWD", "1")
 DEBUG = PROD is None
+
+ALLOW_TOKEN = ["hMRSNSNiw3tAh33cLwCGhXeZDs4zNyeMnGwhoFjH6vavT"]

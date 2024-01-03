@@ -1,4 +1,6 @@
-from database.schemas import Session
+from aiohttp import web
+from modules.utils.constant import DATABASE_KEY
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ModelError(Exception):
@@ -9,17 +11,16 @@ class SchemaError(Exception):
     pass
 
 
+class SessionError(Exception):
+    pass
+
+
 class BaseRepository:
-    def __init__(self):
+    def __init__(self, request: web.Request):
         super().__init__()
-        self.session = Session
+        self.session = AsyncSession(request.app[DATABASE_KEY])
         self.schema = None
         self.model = None
-
-    def get_session_query(self):
-        if self.model is None:
-            raise ModelError()
-        return self.session.query(self.model)
 
     def serialization(self, unserialization):
         if self.schema is None:

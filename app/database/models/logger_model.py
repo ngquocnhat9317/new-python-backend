@@ -1,5 +1,4 @@
 from database.models import Base
-from database.models.user_model import User
 from sqlalchemy.orm import Mapped, mapped_column
 
 

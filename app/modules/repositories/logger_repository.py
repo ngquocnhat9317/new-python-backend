@@ -1,20 +1,19 @@
 from datetime import datetime, timedelta
 
+from aiohttp import web
 from database.models.logger_model import Logger
 from database.schemas.logger_schema import LoggerSchema
 from modules.repositories import BaseRepository
-from sqlalchemy import delete
 
 TIME_FORMAT = "%d/%m/%Y, %H:%M:%S"
 
 
 class LoggerRepository(BaseRepository):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, request: web.Request):
+        super().__init__(request)
         self.model = Logger
         self.schema = LoggerSchema()
-
-        self.session_query = self.get_session_query()
+        self.schema.Meta.sqla_session = self.session
 
     def login_logger(self, ip: str):
         self.session.add(
@@ -24,9 +23,10 @@ class LoggerRepository(BaseRepository):
             )
         )
 
-    def check_logger(self, ip: str):
+    async def check_logger(self, ip: str):
         logger: Logger = (
-            self.session_query.filter(self.model.logger_ip == ip)
+            await self.session.query(self.model)
+            .filter(self.model.logger_ip == ip)
             .order_by(self.model.create_at.desc())
             .first()
         )
@@ -35,9 +35,10 @@ class LoggerRepository(BaseRepository):
 
         return not self.__check_outdate_logger(create_at=logger.create_at)
 
-    def clear_log(self):
+    async def clear_log(self):
+        session_query = await self.session.query(self.model)
         loggers: list[Logger] = list(
-            self.session_query.order_by(self.model.create_at.desc()).all()
+            session_query.order_by(self.model.create_at.desc()).all()
         )
 
         clear_loggers = [
@@ -46,7 +47,7 @@ class LoggerRepository(BaseRepository):
             if idx >= 50 or self.__check_outdate_logger(create_at=logger.create_at)
         ]
 
-        self.session_query.filter(self.model.id.in_(clear_loggers)).delete(
+        session_query.filter(self.model.id.in_(clear_loggers)).delete(
             synchronize_session=False
         )
 

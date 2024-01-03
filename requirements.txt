@@ -8,6 +8,7 @@ annotated-types==0.6.0
 apispec==3.3.2
 async-timeout==4.0.3
 asyncio==3.4.3
+asyncpg==0.29.0
 attrs==23.1.0
 black==23.12.1
 cffi==1.16.0
@@ -15,6 +16,7 @@ click==8.1.7
 cryptography==41.0.7
 dnspython==2.4.2
 frozenlist==1.4.1
+greenlet==3.0.3
 idna==3.6
 isort==5.13.2
 Jinja2==3.1.2
@@ -26,7 +28,6 @@ mypy-extensions==1.0.0
 packaging==23.2
 pathspec==0.12.1
 platformdirs==4.1.0
-psycopg2-binary==2.9.9
 pycparser==2.21
 python-dotenv==1.0.0
 PyYAML==6.0.1

@@ -1,10 +1,11 @@
-from marshmallow import Schema, fields
+from marshmallow import fields
+from modules.schemas import BaseSchema
 
 
-class VerifyRequest(Schema):
+class VerifyRequest(BaseSchema):
     ip = fields.Str(description="ip", required=True, allow_none=False)
 
 
-class LoginRequest(Schema):
+class LoginRequest(BaseSchema):
     ip = fields.Str(description="ip", required=True, allow_none=False)
     name = fields.Str(description="name", required=True, allow_none=False)
