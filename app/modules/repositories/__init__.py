@@ -16,9 +16,7 @@ class SessionError(Exception):
 
 
 class BaseRepository:
-    def __init__(self, request: web.Request):
-        super().__init__()
-        self.session = AsyncSession(request.app[DATABASE_KEY])
+    def __init__(self):
         self.schema = None
         self.model = None
 
@@ -26,3 +24,6 @@ class BaseRepository:
         if self.schema is None:
             raise SchemaError()
         return self.schema.dump(unserialization)
+
+    async def close(self):
+        await self.session.close()

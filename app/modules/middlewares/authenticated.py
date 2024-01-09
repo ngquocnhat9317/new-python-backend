@@ -1,5 +1,5 @@
 from aiohttp import web
-from config import ALLOW_TOKEN
+from modules.utils.config import ALLOW_TOKEN
 
 
 @web.middleware

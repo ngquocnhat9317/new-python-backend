@@ -36,14 +36,14 @@ async def welcome(request: web.Request):
 @json_schema(LoginRequest())
 async def login_handle(request: web.Request):
     data = await request.json()
-    user_repo = UserRepository(request)
+    user_repo = UserRepository()
 
     name = str(data["name"]).lower()
     user = await user_repo.get_user_master()
 
     ip = str(data["ip"])
     if name in list(user.conditions) and ip:
-        logger_repo = LoggerRepository(request)
+        logger_repo = LoggerRepository()
         logger_repo.login_logger(ip=ip)
 
         await logger_repo.clear_log()
@@ -83,11 +83,9 @@ async def login_handle(request: web.Request):
 async def verify_handle(request: web.Request):
     data = request.query
     ip = data["ip"]
-    logger_repo = LoggerRepository(request)
-    logger_repo.check_logger(ip)
+    logger_repo = LoggerRepository()
 
     if logger_repo.check_logger(ip):
-        print(CheckResponse().dump({"check_status": True}))
         return web.json_response(CheckResponse().dump({"result": {"check_status": True}}))
 
     return web.json_response(CheckResponse().dump({"result": {"check_status": False}}))
