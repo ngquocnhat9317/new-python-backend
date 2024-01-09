@@ -1,7 +1,8 @@
+import asyncio
 from datetime import datetime, timedelta
 
 from aiohttp import web
-from aiohttp_apispec import docs, json_schema, querystring_schema, response_schema
+from aiohttp_apispec import docs, json_schema, querystring_schema
 from modules.repositories.logger_repository import LoggerRepository
 from modules.repositories.user_repository import UserRepository
 from modules.schemas.request_schema import LoginRequest, VerifyRequest
@@ -26,6 +27,14 @@ async def welcome(request: web.Request):
     tags=["Login Function"],
     summary="Login handle",
     description="Login handle",
+    parameters=[
+        {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {"type": "string", "format": "uuid"},
+            "required": "true",
+        }
+    ],
     responses={
         200: {
             "schema": CheckResponse,
@@ -35,18 +44,21 @@ async def welcome(request: web.Request):
 )
 @json_schema(LoginRequest())
 async def login_handle(request: web.Request):
-    data = await request.json()
-    user_repo = UserRepository(request)
+    data: dict = await request.json()
+    data = LoginRequest().dump(data)
+    user_repo = UserRepository()
 
     name = str(data["name"]).lower()
     user = await user_repo.get_user_master()
 
     ip = str(data["ip"])
     if name in list(user.conditions) and ip:
-        logger_repo = LoggerRepository(request)
-        logger_repo.login_logger(ip=ip)
+        logger_repo = LoggerRepository()
+        asyncio.run_coroutine_threadsafe(
+            logger_repo.login_logger(ip=ip), asyncio.get_running_loop()
+        )
 
-        await logger_repo.clear_log()
+        # await logger_repo.clear_log()
 
         return web.json_response(
             CheckResponse().dump(
@@ -72,6 +84,14 @@ async def login_handle(request: web.Request):
     tags=["Login Function"],
     summary="Verify login status",
     description="Verify login status",
+    parameters=[
+        {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {"type": "string", "format": "uuid"},
+            "required": "true",
+        }
+    ],
     responses={
         200: {
             "schema": CheckResponse,
@@ -83,12 +103,12 @@ async def login_handle(request: web.Request):
 async def verify_handle(request: web.Request):
     data = request.query
     ip = data["ip"]
-    logger_repo = LoggerRepository(request)
-    logger_repo.check_logger(ip)
+    logger_repo = LoggerRepository()
 
-    if logger_repo.check_logger(ip):
-        print(CheckResponse().dump({"check_status": True}))
-        return web.json_response(CheckResponse().dump({"result": {"check_status": True}}))
+    if await logger_repo.check_logger(ip):
+        return web.json_response(
+            CheckResponse().dump({"result": {"check_status": True}})
+        )
 
     return web.json_response(CheckResponse().dump({"result": {"check_status": False}}))
 

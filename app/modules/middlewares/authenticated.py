@@ -1,5 +1,6 @@
 from aiohttp import web
-from config import ALLOW_TOKEN
+from modules.schemas.response_schema import ErrorResponse
+from modules.utils.config import ALLOW_TOKEN
 
 
 @web.middleware
@@ -10,13 +11,57 @@ async def authenticated_middleware(request: web.Request, handler):
     try:
         scheme, token = request.headers["Authorization"].strip().split(" ")
     except KeyError:
-        raise web.HTTPUnauthorized(reason="Missing authorization header")
+        return web.json_response(
+            ErrorResponse().dump(
+                {
+                    "status_code": 401,
+                    "error_detail": {
+                        "error_code": "",
+                        "message": "Missing authorization header",
+                    },
+                }
+            ),
+            status=401,
+        )
     except ValueError:
-        raise web.HTTPForbidden(reason="Invalid authorization header")
+        return web.json_response(
+            ErrorResponse().dump(
+                {
+                    "status_code": 403,
+                    "error_detail": {
+                        "error_code": "",
+                        "message": "Invalid authorization header",
+                    },
+                }
+            ),
+            status=403,
+        )
 
     if scheme != "Bearer":
-        raise web.HTTPForbidden(reason="Invalid token scheme")
+        return web.json_response(
+            ErrorResponse().dump(
+                {
+                    "status_code": 403,
+                    "error_detail": {
+                        "error_code": "",
+                        "message": "Invalid token scheme",
+                    },
+                }
+            ),
+            status=403,
+        )
     if token not in ALLOW_TOKEN:
-        raise web.HTTPForbidden(reason="Token doesn't exist")
+        return web.json_response(
+            ErrorResponse().dump(
+                {
+                    "status_code": 403,
+                    "error_detail": {
+                        "error_code": "",
+                        "message": "Token doesn't exist",
+                    },
+                }
+            ),
+            status=403,
+        )
 
     return await handler(request)
