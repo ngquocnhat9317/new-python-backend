@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timedelta
 
 from aiohttp import web
@@ -6,7 +5,7 @@ from aiohttp_apispec import docs, json_schema, querystring_schema
 from modules.repositories.logger_repository import LoggerRepository
 from modules.repositories.user_repository import UserRepository
 from modules.schemas.request_schema import LoginRequest, VerifyRequest
-from modules.schemas.response_schema import CheckResponse
+from modules.schemas.response_schema import LoginResponse, VerifyResponse
 
 
 @docs(
@@ -37,7 +36,7 @@ async def welcome(request: web.Request):
     ],
     responses={
         200: {
-            "schema": CheckResponse,
+            "schema": LoginResponse,
             "description": "Success response",
         },
     },
@@ -53,23 +52,23 @@ async def login_handle(request: web.Request):
 
     ip = str(data["ip"])
     if name in list(user.conditions) and ip:
-        logger_repo = LoggerRepository()
-        asyncio.run_coroutine_threadsafe(
-            logger_repo.login_logger(ip=ip), asyncio.get_running_loop()
-        )
+        logger_repo = LoggerRepository(user_repo.connect.engine)
+        await logger_repo.login_logger(ip=ip)
+        await logger_repo.close()
 
         # await logger_repo.clear_log()
 
         return web.json_response(
-            CheckResponse().dump(
+            LoginResponse().dump(
                 {
                     "result": {"check_status": True, "message": "Login Success"},
                 }
             )
         )
 
+    await user_repo.close()
     return web.json_response(
-        CheckResponse().dump(
+        LoginResponse().dump(
             {
                 "result": {
                     "check_status": False,
@@ -94,7 +93,7 @@ async def login_handle(request: web.Request):
     ],
     responses={
         200: {
-            "schema": CheckResponse,
+            "schema": VerifyResponse,
             "description": "Success response",
         },
     },
@@ -106,11 +105,13 @@ async def verify_handle(request: web.Request):
     logger_repo = LoggerRepository()
 
     if await logger_repo.check_logger(ip):
+        await logger_repo.close()
         return web.json_response(
-            CheckResponse().dump({"result": {"check_status": True}})
+            VerifyResponse().dump({"result": {"check_status": True}})
         )
 
-    return web.json_response(CheckResponse().dump({"result": {"check_status": False}}))
+    await logger_repo.close()
+    return web.json_response(VerifyResponse().dump({"result": {"check_status": False}}))
 
 
 def check_expired(date_str: str) -> bool:

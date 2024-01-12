@@ -7,13 +7,14 @@ from database.schemas.logger_schema import LoggerSchema
 from modules.repositories import BaseRepository
 from modules.utils.logger import logger_info
 from sqlalchemy import delete, insert, select
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 TIME_FORMAT = "%d/%m/%Y, %H:%M:%S"
 
 
 class LoggerRepository(BaseRepository):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, engine: AsyncEngine = None):
+        super().__init__(engine)
         self.model = Logger
         self.schema = LoggerSchema()
 
@@ -24,6 +25,7 @@ class LoggerRepository(BaseRepository):
                 insert(Logger).values(logger_ip=ip, create_at=current_time)
             )
             await session.commit()
+            await session.aclose()
 
         logger_info(f"Logger success for ip:{ip}")
 
@@ -37,6 +39,7 @@ class LoggerRepository(BaseRepository):
             logger: Logger | None = result.scalars().first()
             if logger is None:
                 return False
+            await session.aclose()
 
             return not self.__check_is_outtime_logger(create_at=logger.create_at)
 
@@ -54,6 +57,7 @@ class LoggerRepository(BaseRepository):
 
             await session.execute(delete(Logger).where(Logger.id.in_(clear_loggers)))
             await session.commit()
+            await session.aclose()
 
     @classmethod
     def __check_is_outtime_logger(cls, create_at: str) -> bool:

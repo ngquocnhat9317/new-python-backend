@@ -8,7 +8,7 @@ from database.db import ConnectPG
 from modules.middlewares.authenticated import authenticated_middleware
 from modules.middlewares.error_handle import error_middleware
 from modules.repositories.user_repository import UserRepository
-from modules.utils.config import DEBUG
+from modules.utils.config import DEBUG, PROD
 from modules.utils.logger import logger_info
 from router import routers
 
@@ -38,10 +38,11 @@ async def start_server(host="0.0.0.0", port=8080):
 
 
 if __name__ == "__main__":
-    # connect_pg = ConnectPG()
-
+    connect_pg = ConnectPG()
     loop = asyncio.get_event_loop()
-    # asyncio.run_coroutine_threadsafe(connect_pg.init_database(), loop)
+
+    if not PROD:
+        asyncio.run_coroutine_threadsafe(connect_pg.init_database(), loop)
     if DEBUG:
         aiohttp_autoreload.start(loop)
     loop.run_until_complete(start_server())
